@@ -52,6 +52,7 @@ func NewService(conf Config) (Database, error) {
 
 func (con *Model) CreateIndex(database, collection string, index *bson.M, unique bool) error {
 	opts := options.Index()
+	opts.SetBackground(true)
 	opts.SetUnique(unique)
 	_, err := con.model.Database(database).Collection(collection).Indexes().CreateOne(context.Background(), mongo.IndexModel{
 		Keys:    index,

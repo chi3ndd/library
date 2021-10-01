@@ -1,6 +1,11 @@
 package rest
 
-import "io"
+import (
+	"io"
+	"os"
+
+	"github.com/chi3ndd/library/log"
+)
 
 type (
 	JsonInterface interface {
@@ -23,3 +28,9 @@ type (
 		Go() error
 	}
 )
+
+var logger log.Logger
+
+func init() {
+	logger, _ = log.New(Module, log.DebugLevel, true, os.Stdout)
+}

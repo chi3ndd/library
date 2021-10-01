@@ -3,6 +3,7 @@ package rest
 import "github.com/chi3ndd/library/slice"
 
 const (
+	Module = "REST"
 	// Auth
 	AuthenticateNone      = "none"
 	AuthenticateBasicAuth = "basic"

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 )
 
 type jsonHandler struct {
@@ -34,9 +33,9 @@ func (h *jsonHandler) Body(data interface{}) JsonInterface {
 
 func (h *jsonHandler) Log(data interface{}) JsonInterface {
 	if h.code < threshold {
-		logrus.Infof("[REST][%d]: %v", h.code, data)
+		logger.Infof("code %d: %v", h.code, data)
 	} else {
-		logrus.Errorf("[REST][%d]: %v", h.code, data)
+		logger.Errorf("code %d: %v", h.code, data)
 	}
 	// Success
 	return h
@@ -48,7 +47,7 @@ func (h *jsonHandler) Go() error {
 		panic(nil)
 	}
 	// Success
-	return h.ctx.JSON(h.code, &model{
+	return h.ctx.JSON(h.code, &response{
 		Success: Success(h.code),
 		Message: status,
 		Detail:  h.body,
