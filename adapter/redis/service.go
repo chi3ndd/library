@@ -5,29 +5,32 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"os"
 	"sync"
 	"time"
 
 	rd "github.com/go-redis/redis/v8"
-	"github.com/sirupsen/logrus"
 
 	"github.com/chi3ndd/library/clock"
+	"github.com/chi3ndd/library/log"
 )
 
 type redisConnector struct {
+	logger log.Logger
 	con    *rd.Client
 	mutex  *sync.Mutex
 	config Config
 }
 
 func NewService(conf Config, tlsConf *tls.Config) Service {
+	logger, _ := log.New(Module, log.DebugLevel, true, os.Stdout)
 	con := rd.NewClient(&rd.Options{
 		Addr:      conf.Address,
 		Password:  conf.Password,
 		DB:        conf.Db,
 		TLSConfig: tlsConf,
 	})
-	r := &redisConnector{con: con, mutex: &sync.Mutex{}, config: conf}
+	r := &redisConnector{logger: logger, con: con, mutex: &sync.Mutex{}, config: conf}
 	// Monitor
 	r.monitor()
 	// Success
@@ -40,7 +43,7 @@ func (r *redisConnector) monitor() {
 		for {
 			if r.con != nil {
 				if r.Ping() != nil {
-					logrus.Info("[Redis] Connection closed")
+					r.logger.Info("connection closed")
 					r.mutex.Lock()
 					for {
 						r.con = rd.NewClient(&rd.Options{
@@ -50,10 +53,10 @@ func (r *redisConnector) monitor() {
 							TLSConfig: nil,
 						})
 						if r.Ping() == nil {
-							logrus.Info("[Redis] Reconnect success!")
+							r.logger.Info("reconnect success!")
 							break
 						}
-						logrus.Info("[Redis] Reconnecting ...")
+						r.logger.Info("reconnecting ...")
 						// Sleep
 						clock.Sleep(clock.Second * 3)
 					}

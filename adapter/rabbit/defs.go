@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	Module            = "RABBIT"
 	ScheduleReconnect = 2 * clock.Second
 	SchedulePublish   = 3 * clock.Second
 	ScheduleConsume   = 3 * clock.Second

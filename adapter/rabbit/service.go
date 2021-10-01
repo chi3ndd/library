@@ -2,15 +2,17 @@ package rabbit
 
 import (
 	"crypto/tls"
+	"os"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 
 	"github.com/chi3ndd/library/clock"
+	"github.com/chi3ndd/library/log"
 )
 
 type rabbitConnection struct {
+	logger     log.Logger
 	connection *amqp.Connection
 	channel    *amqp.Channel
 	config     Config
@@ -19,7 +21,9 @@ type rabbitConnection struct {
 }
 
 func NewService(conf Config, tlsConf *tls.Config) Service {
+	logger, _ := log.New(Module, log.DebugLevel, true, os.Stdout)
 	rb := &rabbitConnection{
+		logger:    logger,
 		config:    conf,
 		tlsConfig: tlsConf,
 	}
@@ -75,21 +79,21 @@ func (r *rabbitConnection) monitor() {
 			if r.connection != nil {
 				reason, ok := <-r.connection.NotifyClose(make(chan *amqp.Error))
 				if !ok {
-					logrus.Info("[Rabbit] Connection closed")
+					r.logger.Info("connection closed")
 					break
 				}
 				if reason != nil {
-					logrus.Infof("[Rabbit] Connection closed. Reason: %v", reason)
+					r.logger.Infof("connection closed, reason: %v", reason)
 				}
 			}
 			// Reconnect
 			for {
 				clock.Sleep(ScheduleReconnect)
 				if err := r.newConnection(); err == nil {
-					logrus.Info("[Rabbit] Recreate connection success!")
+					r.logger.Info("recreate connection success!")
 					break
 				} else {
-					logrus.Errorf("[Rabbit] Recreate connection failed. Reason: %v", err)
+					r.logger.Errorf("recreate connection failed, reason: %v", err)
 				}
 			}
 		}
@@ -101,11 +105,11 @@ func (r *rabbitConnection) monitor() {
 			if r.channel != nil {
 				reason, ok := <-r.channel.NotifyClose(make(chan *amqp.Error))
 				if !ok {
-					logrus.Info("[Rabbit] Channel closed")
+					r.logger.Info("channel closed")
 					break
 				}
 				if reason != nil {
-					logrus.Infof("[Rabbit] Channel closed. Reason: %v", reason)
+					r.logger.Infof("channel closed, reason: %v", reason)
 				}
 			}
 			// Reconnect
@@ -113,10 +117,10 @@ func (r *rabbitConnection) monitor() {
 				clock.Sleep(ScheduleReconnect)
 				if r.connection != nil && !r.connection.IsClosed() {
 					if err := r.newChannel(); err == nil {
-						logrus.Info("[Rabbit] Recreate channel success!")
+						r.logger.Info("recreate channel success!")
 						break
 					} else {
-						logrus.Errorf("[Rabbit] Recreate channel failed. Reason: %v", err)
+						r.logger.Errorf("recreate channel failed, reason: %v", err)
 					}
 				}
 			}
@@ -177,7 +181,7 @@ func (r *rabbitConnection) Publish(exchange, queue string, message Message) erro
 		},
 	)
 	if err != nil {
-		logrus.Errorf("[Rabbit] Publish failed. Reason: %v", err)
+		r.logger.Errorf("publish failed, reason: %v", err)
 		clock.Sleep(SchedulePublish)
 		return r.Publish(exchange, queue, message)
 	}
@@ -190,7 +194,7 @@ func (r *rabbitConnection) Consume(queue string, auto bool, prefetchCount int, c
 		prefetchCount = 1
 	}
 	if err := r.Qos(prefetchCount); err != nil {
-		logrus.Errorf("[Rabbit] Qos failed. Reason: %v", err)
+		r.logger.Errorf("qos failed, reason: %v", err)
 		clock.Sleep(ScheduleConsume)
 		return r.Consume(queue, auto, prefetchCount, callback)
 	}
