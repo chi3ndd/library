@@ -103,8 +103,6 @@ func (r *redisConnector) Set(key, value string, ttl clock.Duration) error {
 }
 
 func (r *redisConnector) SetObject(key string, value interface{}, ttl clock.Duration) error {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
 	bts, err := json.Marshal(value)
 	if err != nil {
 		return err
@@ -125,8 +123,6 @@ func (r *redisConnector) Get(key string) (string, error) {
 }
 
 func (r *redisConnector) GetObject(key string, pointer interface{}) error {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
 	result, err := r.Get(key)
 	if err != nil {
 		return err
