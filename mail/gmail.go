@@ -59,7 +59,7 @@ func (s *Gmail) Send(email *Email) error {
 		"To: %s\r\n"+
 		"Subject: %s\r\n"+
 		"MIME-Version: 1.0\r\n"+
-		"Content-Type: text/plain;charset=\"UTF-8\"\r\n"+
+		"Content-Type: text/html;charset=\"UTF-8\"\r\n"+
 		"\r\n"+
 		"%s", from.String(), strings.Join(receives, ", "), email.Subject, email.Message)
 	_, err := s.service.Users.Messages.Send("me", &gmail.Message{Raw: base64.URLEncoding.EncodeToString([]byte(msg))}).Do()
